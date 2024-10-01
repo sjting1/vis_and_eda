@@ -1,0 +1,238 @@
+---
+title: "Simple document"
+output: github_document:
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(ggridges)
+```
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USW00022534", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2021-01-01",
+    date_max = "2022-12-31") |>
+  mutate(
+    name = case_match( #create new variable "name"
+      id, 
+      "USW00094728" ~ "CentralPark_NY", #this weather station is in central park etc
+      "USW00022534" ~ "Molokai_HI",
+      "USS0023B17S" ~ "Waterhole_WA"),
+    tmin = tmin / 10, #puts everything in whole degrees Celsius 
+    tmax = tmax / 10) |>
+  select(name, id, everything())
+```
+
+Making our first plot
+
+```{r}
+ggplot(weather_df, aes(x = tmin, y =tmax)) + 
+  geom_point()
+```
+
+
+```{r}
+weather_df |>
+  #can also add a mutate |> step here then plot
+  ggplot(aes( x= tmin, y = tmax))+
+           geom_point()
+```
+
+```{r}
+ggp_weather_scatterplot = 
+  weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) + 
+  geom_point()
+
+ggp_weather_scatterplot
+```
+
+```{r}
+weather_df |> 
+  filter(is.na(tmax)) #shows missing tmax values
+```
+
+## Fancier 
+
+Where you define the aesthetics matter
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point (alpha = 0.3, size = 0.8) +#makes points a bit more transparent using alpha, makes points smaller
+  geom_smooth (se = FALSE) #smooth curve to fit through scatterplot datapoints; se = standard error
+
+```
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point (aes(color = name), alpha = 0.3, size = 0.8) +
+  geom_smooth (se = FALSE)
+#run this one and the one above to see difference
+```
+
+Use faceting real quick
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, color = name)) +
+  geom_point(alpha = .3) +
+  geom_smooth(se = FALSE) +
+  facet_grid(. ~ name) #run to see
+```
+
+Let's make a somewhat more interesting scatterplot
+
+```{r}
+weather_df |>
+  ggplot(aes(x = date, y = tmax, color = name, size = prcp)) + #set size to precipitation
+  geom_point(alpha = .3) + 
+  geom_smooth(se = FALSE) + 
+  facet_grid(. ~ name)
+```
+
+Learning assessment
+```{r}
+weather_df |> 
+  filter(name == "CentralPark_NY") |> #filter
+  mutate(
+    tmax_fahr = tmax * (9 / 5) + 32, #convert to F
+    tmin_fahr = tmin * (9 / 5) + 32 #convert to F
+    ) |> #^data processing piece then plot
+  ggplot(aes(x = tmin_fahr, y = tmax_fahr)) +
+  geom_point(alpha = .5) + 
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+#small things
+
+Just the line:
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) + #defines aesthetics
+  geom_smooth (se = FALSE) 
+```
+
+j
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) +
+  geom_point() + 
+  geom_hex() #density plot (try to install again)
+```
+
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax)) + #defines aesthetics
+  geom_point(color = "blue")
+  geom_smooth (se = FALSE) 
+```
+
+##univariate plots
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = tmax, fill = name)) + 
+  geom_histogram(position = "dodge") # puts bars next to each other . 
+```
+
+how do I fix this? maybe facet?
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin)) +
+  geom_histogram() + 
+  facet_grid(.~name)
+```
+
+maybe a density plot?
+
+```{r}
+ ggplot(weather_df, aes(x = tmax)) + 
+  geom_histogram()
+```
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, fill = name)) +
+  geom_density(alpha = .3)
+```
+
+```{r}
+weather_df |> 
+  ggplot(aes(x = name, y = tmin, fill = name)) +
+  geom_boxplot()
+```
+
+violin plots
+```{r}
+weather_df |>
+  ggplot(aes(x = name, y = tmin, fill = name)) + 
+  geom_violin()
+```
+
+ridge plot: looks sort of like density plot
+```{r}
+weather_df |> 
+  ggplot(aes(x = tmin, y = name)) + 
+  geom_density_ridges()
+```
+
+Learning assessment:
+
+denisity
+```{r}
+ggplot(weather_df, aes(x = prcp)) + 
+  geom_density(aes(fill = name), alpha = .5) 
+```
+
+Boxplot
+```{r}
+ggplot(weather_df, aes(y = prcp, x = name)) + 
+  geom_boxplot() 
+```
+
+Ridges 1a
+```{r}
+ggplot(weather_df, aes(x = prcp, y = name)) + 
+  geom_density_ridges(scale = .85)
+```
+Ridges 1b
+```{r}
+weather_df |> 
+  filter(prcp > 0) |> 
+  ggplot(aes(x = prcp, y = name)) + 
+  geom_density_ridges(scale = .85)
+```
+
+```{r}
+weather_df |> 
+  filter(prcp > 10, prcp < 1000) |> 
+  ggplot(aes(x = prcp, fill = name)) + 
+  geom_density(alpha = .3)
+```
+
+## saving and embedding plots
+
+saving plots
+```{r}
+ggp_weather = 
+  weather_df |> 
+  ggplot(aes(x = date, y = tmax, color = name))+
+  geom_point()
+
+ggsave("ggp_weather.pdf", ggp_weather, width = 8, height = 6)  #will save the most recent figure plot by default, or can specify as above with dimensions
+```
+
+embedding plots
+```{r, fig.width = 12, fig.height = 12}
+weather_df |> 
+  ggplot(aes(x = date, y = tmax, color = name)) +
+  geom_point()
+#adding fig.width or height will change the embedded figure 
+#or can use "fig.width = 6, fig.asp = 6" to set it as high as 
+```
+
